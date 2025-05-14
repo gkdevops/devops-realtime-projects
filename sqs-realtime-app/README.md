@@ -85,15 +85,8 @@ This instance will host the NodeJS application that will interact with the SQS q
 2.  **Install NodeJS and npm:** Follow the instructions specific to your AMI to install NodeJS and npm (Node Package Manager). For example, on Amazon Linux 2:
 
     ```bash
-    sudo yum update -y
-    sudo yum install -y nodejs npm
-    ```
-
-    For Ubuntu:
-
-    ```bash
-    sudo apt update -y
-    sudo apt install -y nodejs npm
+    curl -sL https://rpm.nodesource.com/setup_20.x | sudo bash -
+    sudo dnf install nodejs -y
     ```
 
 3.  **Verify installation:**
@@ -103,92 +96,20 @@ This instance will host the NodeJS application that will interact with the SQS q
     npm -v
     ```
 
-## Step 5: Create the NodeJS Application on the EC2 Instance
+## Step 5: Run the NodeJS Application on the EC2 Instance
 
 This application will interact with the SQS queue using the AWS SDK for JavaScript.
 
-1.  **Create a project directory:**
+
+1.  **Update the ENV:**
+
+    Replace `YOUR_AWS_REGION` and `YOUR_SQS_QUEUE_URL` in .env file with your actual values.** You can find the Queue URL in the SQS console when you select your queue.
+
+
+1.  **Run the NodeJS App:**
 
     ```bash
-    mkdir sqs-consumer
-    cd sqs-consumer
-    ```
-
-2.  **Initialize a NodeJS project:**
-
-    ```bash
-    npm init -y
-    ```
-
-3.  **Install the AWS SDK for JavaScript:**
-
-    ```bash
-    npm install aws-sdk
-    ```
-
-4.  **Create a JavaScript file (e.g., `sqs_consumer.js`):**
-
-    ```javascript
-    // sqs_consumer.js
-    const AWS = require('aws-sdk');
-
-    // Configure the AWS region
-    AWS.config.update({ region: 'YOUR_AWS_REGION' }); // Replace with your AWS region
-
-    // Create an SQS service object
-    const sqs = new AWS.SQS({ apiVersion: '2012-11-05' });
-
-    const queueURL = 'YOUR_SQS_QUEUE_URL'; // Replace with your SQS queue URL
-
-    async function receiveMessage() {
-      const params = {
-        QueueUrl: queueURL,
-        MaxNumberOfMessages: 10, // Adjust as needed
-        WaitTimeSeconds: 20, // Enable long polling
-      };
-
-      try {
-        const data = await sqs.receiveMessage(params).promise();
-
-        if (data.Messages) {
-          data.Messages.forEach(message => {
-            console.log('Received message:', message.Body);
-            // **Process your message here**
-
-            // Delete the message from the queue after processing
-            const deleteParams = {
-              QueueUrl: queueURL,
-              ReceiptHandle: message.ReceiptHandle,
-            };
-
-            sqs.deleteMessage(deleteParams, (err, data) => {
-              if (err) {
-                console.error('Error deleting message:', err);
-              } else {
-                console.log('Message deleted successfully');
-              }
-            });
-          });
-        } else {
-          // No messages in the queue
-          // console.log('No messages available.');
-        }
-      } catch (err) {
-        console.error('Error receiving messages:', err);
-      }
-    }
-
-    // Poll for messages every few seconds (or use a more robust approach)
-    setInterval(receiveMessage, 5000);
-    console.log('SQS consumer started...');
-    ```
-
-    **Replace `YOUR_AWS_REGION` and `YOUR_SQS_QUEUE_URL` with your actual values.** You can find the Queue URL in the SQS console when you select your queue.
-
-5.  **Run the NodeJS application:**
-
-    ```bash
-    node sqs_consumer.js
+    node app.js
     ```
 
     This application will now periodically poll the SQS queue for messages and process them.
